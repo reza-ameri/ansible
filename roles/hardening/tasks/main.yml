@@ -1,0 +1,110 @@
+---
+- name: Update system packages
+  apt:
+    upgrade: dist
+    update_cache: yes
+  environment:
+    http_proxy: "{{ proxy_url }}"
+    https_proxy: "{{ proxy_url }}"
+
+- name: Install iptables
+  apt:
+    name: iptables
+    state: present
+  environment:
+    http_proxy: "{{ proxy_url }}"
+    https_proxy: "{{ proxy_url }}"
+
+- name: Install iptables-persistent to save rules
+  apt:
+    name: iptables-persistent
+    state: present
+  environment:
+    http_proxy: "{{ proxy_url }}"
+    https_proxy: "{{ proxy_url }}"
+
+- name: Flush existing iptables rules
+  iptables:
+    flush: yes
+
+- name: Set default INPUT policy to DROP
+  iptables:
+    chain: INPUT
+    policy: DROP
+- name: Set default FORWARD policy to DROP
+  iptables:
+    chain: FORWARD
+    policy: DROP
+
+- name: Set default OUTPUT policy to ACCEPT
+  iptables:
+    chain: OUTPUT
+    policy: ACCEPT
+
+- name: Allow established and related connections
+  iptables:
+    chain: INPUT
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+
+- name: Allow loopback
+  iptables:
+    chain: INPUT
+    in_interface: lo
+    jump: ACCEPT
+
+- name: Allow SSH (port 22)
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: 22
+    jump: ACCEPT
+
+- name: Allow HTTP (port 80)
+  iptables:
+    chain: INPUT
+    protocol: tcp
+destination_port: 80
+    jump: ACCEPT
+
+- name: Allow HTTPS (port 443)
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: 443
+    jump: ACCEPT
+
+- name: Save iptables rules
+  command: iptables-save > /etc/iptables/rules.v4
+  changed_when: true
+
+- name: Disable root login via SSH
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PermitRootLogin'
+    line: 'PermitRootLogin no'
+    state: present
+    notify: Restart SSH
+
+- name: Install fail2ban
+  apt:
+    name: fail2ban
+    state: present
+  environment:
+    http_proxy: "{{ proxy_url }}"
+    https_proxy: "{{ proxy_url }}"
+- name: Ensure fail2ban is started and enabled
+  systemd:
+    name: fail2ban
+    state: started
+    enabled: yes
+
+- name: Disable unnecessary services
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  loop:
+    - apport
+    - whoopsie
+  ignore_errors: yes
