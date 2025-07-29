@@ -1,0 +1,20 @@
+---
+# SSH settings
+ansible_ssh_user: ubuntu
+ansible_ssh_private_key_file: /home/your_control_node_user/.ssh/id_rsa
+
+# Proxy settings
+proxy_host: proxy.example.com
+proxy_port: 1080
+proxy_user: your_proxy_user
+proxy_pass: your_proxy_password
+proxy_url: "http://{{ proxy_user }}:{{ proxy_pass }}@{{ proxy_host }}:{{ proxy_port }}"
+
+# Firewall ports (for iptables)
+allowed_ports:
+  - 22
+  - 80
+  - 443
+
+# Docker settings
+docker_compose_version: v2.24.5
